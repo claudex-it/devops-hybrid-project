@@ -1,0 +1,38 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  IMAGE_NAME: "devops-app"
+  IMAGE_TAG: "${CI_COMMIT_SHORT_SHA}"
+
+# ---------------------
+# 🏗️ BUILD STAGE
+# ---------------------
+build:
+  stage: build
+  tags: [local]
+  script:
+    - echo "➡️ Switching Docker to Minikube daemon..."
+    - eval $(minikube docker-env)
+    - echo "➡️ Building Docker image..."
+    - docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ./app
+    - docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+    - echo "✅ Docker image built successfully:"
+    - docker images | grep ${IMAGE_NAME}
+
+# ---------------------
+# 🚀 DEPLOY STAGE
+# ---------------------
+deploy:
+  stage: deploy
+  tags: [local]
+  needs: ["build"]
+  script:
+    - echo "➡️ Deploying application to Kubernetes..."
+    - kubectl apply -f kubernetes/service.yaml
+    - kubectl apply -f kubernetes/deployment.yaml
+    - echo "➡️ Updating image to new build version..."
+    - kubectl set image deployment/devops-app devops-app=${IMAGE_NAME}:${IMAGE_TAG} --record
+    - kubectl rollout status deployment/devops-app
+    - echo "✅ Deployment successful!"
