@@ -1,93 +1,240 @@
-# devops-hybrid-project
+#  DevOps Hybrid Project – Local GitLab CI/CD + Kubernetes (Minikube)
 
+This repository contains a full production-like DevOps environment running entirely on a **local Linux host** with optional macOS access through Tailscale.
 
+It demonstrates real-world DevOps engineering:  
+**containerization → orchestration → CI/CD → monitoring → automation → deployment.**
 
-## Getting started
+The stack includes:
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+- GitLab CE (self-hosted, running in Docker)
+- GitLab Runner (Shell executor)
+- Minikube Kubernetes cluster
+- Automated CI/CD pipeline
+- Monitoring stack (Prometheus + Grafana + Loki)
+- Dockerized application (2 replicas)
+- IaC structure (Terraform + Ansible)
+- macOS → Linux port forwarding (Tailscale magic)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+---
 
-## Add your files
+#  Table of Contents
+- [ DevOps Hybrid Project – Overview](#-devops-hybrid-project--overview)
+- [ Architecture Overview](#-architecture-overview)
+- [ Tech Stack](#-tech-stack)
+- [ CI/CD Pipeline](#-cicd-pipeline)
+- [ Kubernetes Deployment](#️-kubernetes-deployment)
+- [ Monitoring & Observability](#-monitoring--observability)
+- [ Infrastructure Automation](#-infrastructure-automation)
+- [ How to Use the Project](#️-how-to-use-the-project)
+- [ Accessibility via Tailscale](#-accessibility-via-tailscale)
+- [ Documentation](#-documentation)
+- [ Roadmap](#-roadmap)
+- [ Author & Purpose](#-author--purpose)
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+---
+
+#  DevOps Hybrid Project – Overview
+
+This project provides a fully functional **local DevOps platform**, ideal for learning, portfolio, labs, and demonstrating real-world DevOps skills.
+
+###  What it includes:
+- Local GitLab CE with CI/CD
+- GitLab Runner (systemd service)
+- Kubernetes (Minikube)
+- Monitoring stack (Grafana, Prometheus, Loki, Promtail)
+- Automated Docker builds inside Minikube
+- Kubernetes deployments triggered by GitLab pipeline
+- Tailscale remote access
+- Terraform & Ansible structure for future IaC expansion
+
+---
+
+#  Architecture Overview
+
+| Component            | Technology                     | Status       | Purpose                                      |
+|----------------------|---------------------------------|--------------|----------------------------------------------|
+| **Host machine**     | Linux / Ubuntu                  | ✔ Active     | Runs Minikube, GitLab, GitLab Runner         |
+| **Minikube** (1 node)| Kubernetes                      | ✔ Running    | Orchestrates app & monitoring stack          |
+| **GitLab CE**        | Docker container                | ✔ Healthy    | Local Git + CI/CD platform                   |
+| **GitLab Runner**    | Systemd service                 | ✔ Active     | Executes CI/CD pipeline (Shell executor)     |
+| **Monitoring Stack** | Prometheus + Grafana + Loki     | ✔ Running    | Metrics + logging                            |
+| **DevOps App**       | Docker + Kubernetes Deployment  | ✔ Running    | Demo web app (2 replicas)                    |
+| **System Services**  | systemd                         | ✔ Active     | Auto-start Minikube + port-forwarding        |
+| **macOS Access**     | Tailscale                       | ✔ Connected  | Remote access with port mapping              |
+| **K8s Tools**        | Lens, kubectl, Visual K8s       | ✔ Configured | Cluster observability                         |
+
+---
+
+#  Tech Stack
+
+### Languages
+- Python (Flask/WSGI app)
+- Bash automation scripts
+
+### Infrastructure
+- Kubernetes (Minikube)
+- Docker
+- GitLab CI/CD
+- Ansible (structure ready)
+- Terraform (structure ready)
+
+### Monitoring
+- Prometheus
+- Grafana
+- Loki
+- Node Exporter
+- Prometheus Alertmanager
+
+---
+
+#  CI/CD Pipeline
+
+The GitLab pipeline performs two stages:
+
+---
+
+### **1. Build Stage**
+- Uses Minikube Docker daemon  
+  `eval $(minikube docker-env)`
+- Builds image from `app/Dockerfile`
+- Tags it as:  
+  `devops-app:latest`
+- Image stays **inside Minikube** → no registry needed
+
+---
+
+### **2. Deploy Stage**
+- Applies Kubernetes manifests:
+  - Deployment (2 replicas)
+  - NodePort service
+- Automatically rolls out new pods
+- Shows final pod state
+
+---
+
+#  Kubernetes Deployment
 
 ```
-cd existing_repo
-git remote add origin http://localhost/root/devops-hybrid-project.git
-git branch -M main
-git push -uf origin main
+Replicas: 2
+ContainerPort: 5000
+Image: devops-app:latest (local, no registry pull)
 ```
 
-## Integrate with your tools
+### Access
+```bash
+minikube service list
+```
 
-- [ ] [Set up project integrations](http://localhost/root/devops-hybrid-project/-/settings/integrations)
+Example:
+```
+http://192.168.49.2:<NodePort>
+```
 
-## Collaborate with your team
+---
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+#  Monitoring & Observability
 
-## Test and Deploy
+| Component        | Port  | Purpose           |
+|------------------|-------|-------------------|
+| Grafana          | 32123 | Dashboards        |
+| Prometheus       | 9090  | Metrics           |
+| Loki             | 3100  | Logs backend      |
+| Node Exporter    | 9100  | System metrics    |
 
-Use the built-in continuous integration in GitLab.
+Grafana auto-loads Prometheus and Loki datasources.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+---
 
-***
+#  Infrastructure Automation
 
-# Editing this README
+### **Ansible**  
+Folder: `ansible/`  
+Used for installing:
+- Docker
+- GitLab Runner
+- K8s CLI tools
+- System utilities
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### **Terraform**  
+Folder: `terraform/`  
+Prepared for:
+- AWS VPC
+- EKS cluster
+- S3 state backend
+- IAM roles
 
-## Suggestions for a good README
+*(Terraform phase planned in roadmap)*
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+---
 
-## Name
-Choose a self-explaining name for your project.
+#  How to Use the Project
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### 1.Start Minikube  
+```bash
+minikube start --driver=docker
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+###  2.(Optional) Build the app manually  
+```bash
+eval $(minikube docker-env)
+docker build -t devops-app:latest -f app/Dockerfile app/
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### 3.Apply Kubernetes manifests  
+```bash
+kubectl apply -f kubernetes/
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+### 4.Check status  
+```bash
+kubectl get pods -o wide
+minikube service list
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+---
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+#  Accessibility via Tailscale
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Using Tailscale tunnel, all local services are accessible remotely (macOS ↔ Linux).
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+| Service        | URL                                |
+|----------------|-------------------------------------|
+| DevOps App     | http://100.82.136.39:32444          |
+| Grafana        | http://100.82.136.39:32123          |
+| GitLab         | http://100.82.136.39:8929           |
+| K8s API (Lens) | https://100.82.136.39:8443          |
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+---
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+#  Documentation
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Architecture diagram:  
+```
+docs/architecture.png
+```
 
-## License
-For open source projects, say how it is licensed.
+Additional docs will be added in the next phase.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+---
+
+#  Roadmap
+
+- Add Helm charts for the app  
+- Deploy AWS infrastructure (EKS + VPC) via Terraform  
+- Move monitoring into Helm  
+- Add Ingress controller (NGINX)  
+- Add GitLab Kubernetes Agent  
+- Implement Ansible automation for full setup  
+- Add CI/CD security scanning (SAST/DAST)
+
+---
+
+#  Author & Purpose
+
+Purpose of the project:
+
+- Demonstrate a full DevOps workflow  
+- Combine CI/CD + containerization + Kubernetes + monitoring  
+- Provide a production-like local environment  
+- Serve as a base for future cloud migration (AWS EKS)
